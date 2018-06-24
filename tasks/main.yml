@@ -1,0 +1,5 @@
+---
+# tasks file for shibsp
+- name: install httpd
+  yum:
+    name: httpd

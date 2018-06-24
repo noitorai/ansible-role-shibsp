@@ -1,0 +1,23 @@
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: ansible_push
+  playbook: tests/test-kitchen.yml
+  ansible_config: tests/ansible.cfg
+  diff: true
+  chef_bootstrap_url: false
+
+platforms:
+  - name: centos-7
+    driver:
+      box: centos/7
+      provider: libvirt
+
+verifier:
+  name: shell
+  command: bundle exec rspec -f d -I serverspec serverspec/shibsp_spec.rb
+
+suites:
+  - name: default
