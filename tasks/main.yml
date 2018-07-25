@@ -1,5 +1,116 @@
 ---
 # tasks file for shibsp
-- name: install httpd
-  yum:
-    name: httpd
+- block:
+    - name: install httpd and mod_ssl
+      yum:
+        name: "{{ item }}"
+      notify: restart httpd
+      with_items:
+        - httpd
+        - mod_ssl
+    - name: enable httpd
+      service:
+        name: httpd
+        enabled: yes
+
+- block:
+    - name: install Shibboleth repository
+      get_url:
+        url: 'http://download.opensuse.org/repositories/security:/shibboleth/CentOS_7/security:shibboleth.repo'
+        dest: /etc/yum.repos.d/shibboleth.repo 
+        owner: root
+        group: root
+        mode: 0644
+    - name: check if Shibboleth repo file exists
+      stat:
+        path: "/etc/yum.repos.d/shibboleth.repo"
+      register: shib_repo_check
+      changed_when: not shib_repo_check.stat.exists
+
+- block:
+    - name: copy RPM key into the directory
+      copy:
+        src: "{{ rpm_gpg_key }}"
+        dest: "/etc/pki/rpm-gpg/{{ rpm_gpg_key }}"
+        owner: root
+        group: root
+        mode: 0644
+    - name: check if RPM key exists
+      stat:
+        path: "/etc/pki/rpm-gpg/{{ rpm_gpg_key }}"
+      register: rpm_key_check
+      changed_when: not rpm_key_check.stat.exists
+    - name: install RPM key
+      rpm_key:
+        key: "/etc/pki/rpm-gpg/{{ rpm_gpg_key }}"
+        state: present
+      when: rpm_key_check.stat.exists
+      register: rpm_key_exec
+
+- block:
+    - name: install Shibobleth SP
+      yum:
+        name: shibboleth
+      notify: restart shibd
+    - name: enable and start shibd
+      service:
+        name: shibd
+        state: started
+        enabled: yes
+  when: shib_repo_check.stat.exists and rpm_key_exec is defined
+
+#- block:
+#    - name: set hostname
+#      hostname:
+#        name: "{{ shibsp_hostname }}"
+#    - name: set ServerName
+#      lineinfile:
+#        path: /etc/httpd/conf.d/ssl.conf
+#        regexp: '^ServerName\s'
+#        line: 'ServerName {{ shibsp_servername }}:443'
+#        insertafter: '^#ServerName www.example.com'
+
+- name: shibboleth2.xml
+  block:
+    - name: set entityID
+      lineinfile:
+        path: /etc/shibboleth/shibboleth2.xml
+        regexp: '^(\s*<ApplicationDefaults entityID=")https://[^"]+(".*)$'
+        line: '\1{{ shibsp_entity_id }}\2'
+        backrefs: yes
+        backup: yes
+    - name: set IdP entityID
+      lineinfile:
+        path: /etc/shibboleth/shibboleth2.xml
+        regexp: '^(\s*<SSO entityID=")https://[^"]+(".*)$'
+        line: '\1{{ shibsp_idp_entity_id }}\2'
+        backrefs: yes
+    - name: add MetadataProvider
+      lineinfile:
+        path: /etc/shibboleth/shibboleth2.xml
+        insertafter: '^(\s*)<!-- Example of locally maintained metadata. -->$'
+        line: '        <MetadataProvider type="XML" validate="true" file="{{ shibsp_idp_metadata_path }}"/>'
+        backup: yes
+    - name: set CredentialResolver
+      lineinfile:
+        path: /etc/shibboleth/shibboleth2.xml
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+        backrefs: true
+      with_items:
+        - regexp: '^(\s*key=")sp-signing-key.pem(" certificate=")sp-signing-cert.pem("/>)$'
+          line: '\1{{ shibsp_secret_path }}\2{{ shibsp_certificate_path }}\3'
+        - regexp: '^(\s*key=")sp-encrypt-key.pem(" certificate=")sp-encrypt-cert.pem("/>)$'
+          line: '\1{{ shibsp_secret_path }}\2{{ shibsp_certificate_path }}\3'
+    #- name: set CredentialResolver
+    #  lineinfile:
+    #    path: /etc/shibboleth/shibboleth2.xml
+    #    regexp: '^(\s*key=")sp-signing-key.pem(" certificate=")sp-signing-cert.pem("/>)$'
+    #    line: '\1{{ shibsp_secret_path }}\2{{ shibsp_certificate_path }}\3'
+    #    backrefs: true
+    #- name: set CredentialResolver
+    #  lineinfile:
+    #    path: /etc/shibboleth/shibboleth2.xml
+    #    regexp: '^(\s*key=")sp-encrypt-key.pem(" certificate=")sp-encrypt-cert.pem("/>)$'
+    #    line: '\1{{ shibsp_secret_path }}\2{{ shibsp_certificate_path }}\3'
+    #    backrefs: true

@@ -1,2 +1,3 @@
 ---
 # vars file for shibsp
+rpm_gpg_key: RPM-GPG-KEY-OBS-Security-Shibboleth-RPM-Repository-Key

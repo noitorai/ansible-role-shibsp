@@ -1,0 +1,8 @@
+---
+# hostname: "sp.example.ac.jp"
+# servername: "sp.example.ac.jp"
+# entity_id: "https://sp.example.ac.jp/shibboleth-sp"
+# idp_entity_id: "https://idp.example.org/idp/shibboleth"
+# idp_metadata_path: "idp-metadata.xml"
+# certificate_path: "cert/server.crt"
+# secret_path: "cert/server.key"

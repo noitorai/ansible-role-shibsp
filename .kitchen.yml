@@ -4,20 +4,26 @@ driver:
 
 provisioner:
   name: ansible_push
-  playbook: tests/test-kitchen.yml
-  ansible_config: tests/ansible.cfg
-  diff: true
+  ansible_config: test/ansible.cfg
   chef_bootstrap_url: false
+  diff: true
+
+verifier:
+  name: inspec
 
 platforms:
+#  - name: ubuntu-16.04
   - name: centos-7
     driver:
       box: centos/7
       provider: libvirt
 
-verifier:
-  name: shell
-  command: bundle exec rspec -f d -I serverspec serverspec/shibsp_spec.rb
-
 suites:
   - name: default
+    verifier:
+      inspec_tests:
+        - path: test/integration/default
+      attrs:
+        - test/integration/default/attribute.yml
+    provisioner:
+      playbook: test/integration/default/default.yml

@@ -1,2 +1,9 @@
 ---
 # defaults file for shibsp
+shibsp_hostname: "sp.example.ac.jp"
+shibsp_servername: "{{ shibsp_hostname }}"
+shibsp_entity_id: "https://{{ shibsp_servername }}/shibboleth-sp"
+shibsp_idp_entity_id: "https://idp.example.org/idp/shibboleth"
+shibsp_idp_metadata_path: "idp-metadata.xml"
+shibsp_certificate_path: "cert/server.crt"
+shibsp_secret_path: "cert/server.key"

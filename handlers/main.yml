@@ -1,2 +1,11 @@
 ---
 # handlers file for shibsp
+- name: restart httpd
+  service:
+    name: httpd
+    state: restarted
+
+- name: restart shibd
+  service:
+    name: shibd
+    state: restarted
